@@ -78,11 +78,39 @@ static int soft_i2c_board_init(void) { return 0; }
 DECLARE_GLOBAL_DATA_PTR;
 
 /* add board specific code here */
+int button_value = 1;
+
+int board_late_init(void) {
+	printf("board.c : late init : petbotRESET - late init %d \n",button_value);
+	return 0;
+}
+
 int board_init(void)
 {
 	__maybe_unused int id_pfr1, ret;
 
 	gd->bd->bi_boot_params = (PHYS_SDRAM_0 + 0x100);
+
+//turn off the petbot LED as soon as bootloader is up
+	printf("board.c : %d , %d\n",SUNXI_GPI(3),SUNXI_GPH(7));
+	printf("board.c : setting ping 259 to 0 : petbotLED\n");
+	gpio_request(259, "petbotLED");
+	gpio_direction_output(259,0);
+//factory reset button is 231
+	printf("board.c : setting ping 231 to input : petbotRESET\n");
+	gpio_request(231,"petbotRESET");
+	gpio_direction_input(231);
+	sunxi_gpio_set_pull(231, SUNXI_GPIO_PULL_UP);
+	udelay(1000);
+	button_value = gpio_get_value(231);	
+	printf("board.c : setting ping 231 to input : petbotRESET %d\n",button_value);
+	if (button_value==0) {
+		printf("board.c : setting ping 231 to input : petbotRESET %d - 1 - setting reset_button\n",button_value);
+		setenv("reset_button", "1");
+	} else {
+		printf("board.c : setting ping 231 to input : petbotRESET %d - 0 - setting reset_button\n",button_value);
+		setenv("reset_button", "0");
+	}
 
 #ifndef CONFIG_ARM64
 	asm volatile("mrc p15, 0, %0, c0, c1, 1" : "=r"(id_pfr1));
@@ -684,6 +712,12 @@ int misc_init_r(void)
 
 	setenv("fel_booted", NULL);
 	setenv("fel_scriptaddr", NULL);
+	printf("board.c : late init : petbotRESET - misc init %d \n",button_value);
+	if (button_value==0) {
+		setenv("reset_button", "0");
+	} else {
+		setenv("reset_button", "1");
+	}
 	/* determine if we are running in FEL mode */
 	if (!is_boot0_magic(SPL_ADDR + 4)) { /* eGON.BT0 */
 		setenv("fel_booted", "1");
