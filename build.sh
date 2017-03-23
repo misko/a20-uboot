@@ -6,7 +6,7 @@ make petbot_defconfig ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 #menuconfig
 #make ARCH=arm menuconfig
 #make it 
-#make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 
 
 #195c195
